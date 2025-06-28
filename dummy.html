@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title></title>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --secondary: #ec4899;
+            --gradient: linear-gradient(135deg, var(--primary), var(--secondary));
+            --glass: rgba(255, 255, 255, 0.9);
+        }
+
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            background: radial-gradient(circle at top left, #f3e8ff, #f0f4ff);
+            min-height: 100vh;
+            margin: 0;
+            padding: 2rem;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        .particle-background {
+            position: fixed;
+            width: 100vw;
+            height: 100vh;
+            top: 0;
+            left: 0;
+            z-index: -1;
+            background: transparent;
+        }
+
+        h1 {
+            font-size: 3rem;
+            background: var(--gradient);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin: 2rem 0;
+            text-align: center;
+            filter: drop-shadow(0 4px 8px rgba(99, 102, 241, 0.2));
+            transform: translateY(-20px);
+            opacity: 0;
+            animation: floatTitle 1s 0.3s ease-out forwards;
+        }
+
+        .search-container {
+            max-width: 800px;
+            margin: 2rem auto;
+            position: relative;
+            perspective: 1000px;
+        }
+
+        .input-wrapper {
+            position: relative;
+            isolation: isolate;
+        }
+
+        #query {
+            width: 100%;
+            padding: 1.5rem 2.5rem;
+            font-size: 1.2rem;
+            border: none;
+            border-radius: 20px;
+            background: var(--glass);
+            backdrop-filter: none;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            transform-style: preserve-3d;
+        }
+
+        #query:focus {
+            outline: none;
+            box-shadow: 0 12px 40px rgba(99, 102, 241, 0.2);
+            transform: translateZ(20px);
+        }
+
+        .search-btn {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            padding: 1rem 2.5rem;
+            border: none;
+            border-radius: 15px;
+            background: var(--gradient);
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 24px rgba(99, 102, 241, 0.3);
+            overflow: hidden;
+        }
+
+        .search-btn::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 300px;
+            height: 300px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            transition: transform 0.6s ease;
+        }
+
+        .search-btn:hover {
+            transform: translateY(-50%) scale(1.05);
+            box-shadow: 0 12px 32px rgba(99, 102, 241, 0.4);
+        }
+
+        .search-btn:active::after {
+            transform: translate(-50%, -50%) scale(1);
+            opacity: 0;
+        }
+
+        .result-card {
+            background: var(--glass);
+            backdrop-filter: none;
+            border-radius: 20px;
+            padding: 2rem;
+            margin: 1.5rem 0;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
+            transform: translateY(30px) rotateX(10deg);
+            opacity: 0;
+            animation: cardFloat 0.6s cubic-bezier(0.23, 1, 0.32, 1) forwards;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .result-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            border-radius: 20px;
+            border: 2px solid transparent;
+            background: var(--gradient) border-box;
+            -webkit-mask: 
+                linear-gradient(#fff 0 0) padding-box, 
+                linear-gradient(#fff 0 0);
+            mask: 
+                linear-gradient(#fff 0 0) padding-box, 
+                linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            opacity: 0.2;
+        }
+
+        .result-card:hover {
+            transform: translateY(-5px) rotateX(0deg);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.1);
+        }
+
+        .meaningful-summary {
+            line-height: 1.7;
+            margin: 1.5rem 0;
+            font-size: 1.1rem;
+            color: #334155;
+        }
+
+        .keyphrase {
+            background: rgba(99, 102, 241, 0.1);
+            padding: 0.2em 0.4em;
+            border-radius: 4px;
+            font-weight: 500;
+            color: var(--primary);
+        }
+
+        .summary-section {
+            margin: 2rem 0;
+            padding: 1.5rem;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 16px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.05);
+        }
+
+        .section-title {
+            font-size: 1.4rem;
+            color: var(--primary);
+            margin-bottom: 1.2rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid rgba(99, 102, 241, 0.2);
+        }
+
+        .context-connector {
+            color: var(--secondary);
+            font-weight: 600;
+            margin: 1rem 0;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .context-connector::before {
+            content: "➔";
+            font-size: 1.2em;
+        }
+
+        .source-header {
+            margin-bottom: 1.5rem;
+        }
+
+        .source-link {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .source-link:hover {
+            text-decoration: underline;
+            opacity: 0.9;
+        }
+
+        .source-link::after {
+            content: " ↗";
+            font-size: 0.8em;
+            vertical-align: super;
+        }
+
+        .loader-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(4px);
+            z-index: 999;
+            display: none;
+            opacity: 0;
+            transition: opacity 0.3s ease-in-out;
+        }
+
+        .loader {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            z-index: 1000;
+            display: none;
+            opacity: 0;
+            transition: opacity 0.3s ease-in-out;
+        }
+
+        .loader::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 50%;
+            border: 4px solid;
+            border-color: var(--primary) transparent var(--secondary) transparent;
+            animation: spin 1.2s cubic-bezier(0.68, -0.55, 0.27, 1.55) infinite;
+        }
+
+        .loader.active{
+            display: block;
+            opacity: 1;
+        }
+
+        .stock-info {
+    display: grid;
+    gap: 1.2rem;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+}
+.dynamic-summary {
+    line-height: 1.7;
+    margin: 1rem 0;
+    font-size: 1.1rem;
+    color: #334155;
+    max-height: 500px;
+    overflow-y: auto;
+    padding-right: 1rem;
+}
+
+.source-summary {
+    margin: 1rem 0;
+    padding: 1rem;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 12px;
+    border-left: 3px solid var(--primary);
+}
+
+.source-result {
+    margin: 1.5rem 0;
+}
+
+.source-result:not(:last-child) {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    padding-bottom: 1.5rem;
+}
+
+.dynamic-summary::-webkit-scrollbar {
+    width: 6px;
+}
+
+.dynamic-summary::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.05);
+}
+
+.dynamic-summary::-webkit-scrollbar-thumb {
+    background: var(--primary);
+    border-radius: 4px;
+}
+.stock-metric {
+    background: rgba(255, 255, 255, 0.95);
+    padding: 1.2rem;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.metric-label {
+    display: block;
+    font-size: 0.9rem;
+    color: #64748b;
+    margin-bottom: 0.4rem;
+}
+
+.metric-value {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #1e293b;
+}
+
+.positive { color: #16a34a; }
+.negative { color: #dc2626; }
+
+.symbol-examples {
+    margin-top: 1rem;
+    padding-left: 1.5rem;
+    color: #475569;
+}
+
+.symbol-examples li {
+    margin: 0.4rem 0;
+}
+
+        @keyframes floatTitle {
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        @keyframes cardFloat {
+            to { transform: translateY(0) rotateX(0deg); opacity: 1; }
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .particle {
+            position: absolute;
+            background: var(--gradient);
+            border-radius: 50%;
+            pointer-events: none;
+            animation: float 4s infinite ease-in-out;
+            z-index: -1;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0) scale(1); }
+            50% { transform: translateY(-20px) scale(0.9); }
+        }
+
+        @media (max-width: 768px) {
+            h1 { font-size: 2.2rem; }
+            #query { padding: 1.2rem; }
+            .search-btn { padding: 0.8rem 1.5rem; }
+            .meaningful-summary { font-size: 1rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="particle-background" id="particles"></div>
+    <div class="loader-overlay" id="loaderOverlay"></div>
+    <div class="loader" id="loading"></div>
+    
+    <h1>🔍 Fine Tuned LLM for Web Search</h1>
+    
+    <div class="search-container">
+        <div class="input-wrapper">
+            <input type="text" id="query" placeholder="Ask me anything...">
+            <button class="search-btn" onclick="performSearch()">
+                <span>Explore</span>
+            </button>
+        </div>
+    </div>
+
+    <div id="results"></div>
+
+    <script>
+        // Particle animation initialization
+        function createParticles() {
+            const particles = document.getElementById('particles');
+            for (let i = 0; i < 30; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.cssText = `
+                    width: ${Math.random() * 6 + 4}px;
+                    height: ${Math.random() * 6 + 4}px;
+                    left: ${Math.random() * 100}%;
+                    top: ${Math.random() * 100}%;
+                    animation-delay: ${Math.random() * 2}s;
+                    opacity: ${Math.random() * 0.4 + 0.2};
+                `;
+                particles.appendChild(particle);
+            }   
+        }
+        createParticles();
+    
+        // Main search function
+        async function performSearch() {
+            const query = document.getElementById("query").value.toLowerCase().trim();
+            const loader = document.getElementById("loading");
+            const overlay = document.getElementById("loaderOverlay");
+            const resultsDiv = document.getElementById("results");
+            
+            if (!query) return;
+    
+            // Show loading state
+            loader.classList.add('active');
+            overlay.classList.add('active');
+            resultsDiv.innerHTML = "";
+    
+            try {
+                // Handle stock price queries
+                if (query.startsWith("stock ") || query.includes("price of ")) {
+                    const symbolMatch = query.match(/(?:stock|price of)\s+([a-zA-Z0-9.:-]+)/i);
+                    if (symbolMatch && symbolMatch[1]) {
+                        const symbol = symbolMatch[1].toUpperCase();
+                        const startTime = Date.now();
+                        const response = await fetch(`/stock/${encodeURIComponent(symbol)}`);
+                        
+                        const elapsed = Date.now() - startTime;
+                        if (elapsed < 800) await new Promise(r => setTimeout(r, 800 - elapsed));
+                        
+                        if (!response.ok) throw new Error(await response.text());
+                        
+                        const data = await response.json();
+                        if (data.error) {
+                            displayStockError(symbol, data.error);
+                        } else {
+                            displayStockResults(data);
+                        }
+                        return;
+                    }
+                }
+    
+                // Handle regular search queries
+                const startTime = Date.now();
+                const response = await fetch(`/search_summarize?q=${encodeURIComponent(query)}`);
+                
+                const elapsed = Date.now() - startTime;
+                if (elapsed < 800) await new Promise(r => setTimeout(r, 800 - elapsed));
+                
+                if (!response.ok) throw new Error(await response.text());
+                
+                const data = await response.json();
+                displaySearchResults(data);
+    
+            } catch (error) {
+                console.error("Search failed:", error);
+                resultsDiv.innerHTML = `
+                    <div class="result-card" style="color: #ff4444; animation-delay: 0.1s">
+                        <h3>⚠️ Error</h3>
+                        <p>${error.message || "Failed to fetch results"}</p>
+                    </div>
+                `;
+            } finally {
+                loader.classList.remove('active');
+                overlay.classList.remove('active');
+            }
+        }
+    
+        // Display stock results
+        function displayStockResults(data) {
+            const resultsDiv = document.getElementById("results");
+            const changeClass = data.change.startsWith('-') ? 'negative' : 'positive';
+            
+            resultsDiv.innerHTML = `
+                <div class="result-card" style="animation-delay: 0.1s">
+                    <h3>📈 ${data.symbol} Stock Info</h3>
+                    <div class="stock-info">
+                        <div class="stock-metric">
+                            <span class="metric-label">Price:</span>
+                            <span class="metric-value">$${data.price || 'N/A'}</span>
+                        </div>
+                        <div class="stock-metric">
+                            <span class="metric-label">Change:</span>
+                            <span class="metric-value ${changeClass}">
+                                ${data.change || 'N/A'} (${data.percent_change || 'N/A'})
+                            </span>
+                        </div>
+                        <div class="stock-metric">
+                            <span class="metric-label">Volume:</span>
+                            <span class="metric-value">${data.volume ? Number(data.volume).toLocaleString() : 'N/A'}</span>
+                        </div>
+                        <div class="stock-metric">
+                            <span class="metric-label">Last Trade:</span>
+                            <span class="metric-value">${data.latest_trading_day || 'N/A'}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+    
+        // Display stock errors
+        function displayStockError(symbol, error) {
+            const resultsDiv = document.getElementById("results");
+            resultsDiv.innerHTML = `
+                <div class="result-card" style="color: #ff4444; animation-delay: 0.1s">
+                    <h3>⚠️ Stock Error</h3>
+                    <p>Failed to fetch data for ${symbol}: ${error}</p>
+                    <p>Try these formats:</p>
+                    <ul class="symbol-examples">
+                        <li>AAPL (Apple Inc.)</li>
+                        <li>MSFT (Microsoft)</li>
+                        <li>RELIANCE.BSE (BSE listed)</li>
+                        <li>INFY.NSE (NSE listed)</li>
+                        <li>SBIN.NS (NSE suffix)</li>
+                    </ul>
+                </div>
+            `;
+        }
+    
+        // Display regular search results
+        // Display regular search results
+function displaySearchResults(data) {
+    const processContent = (text) => {
+        // Clean up any leftover markdown-style bullets
+        const cleanText = text.replace(/\*\s*/g, '');
+        // Create a smooth text wrap with optimal line breaks
+        return `<div class="dynamic-summary">${cleanText}</div>`;
+    };
+
+    const resultsDiv = document.getElementById("results");
+    resultsDiv.innerHTML = `
+        <div class="result-card" style="animation-delay: 0.1s">
+            <h3>🌟 Comprehensive Analysis</h3>
+            <div class="final-summary">${processContent(data.final_summary || "No summary available")}</div>
+            ${data.summaries.length ? `<div class="context-connector">Supported by ${data.summaries.length} sources</div>` : ''}
+        </div>
+        ${data.summaries.length ? `
+        <div class="result-card" style="animation-delay: 0.2s">
+            <h3>📚 Evidence Base</h3>
+            ${data.summaries.map((item, index) => `
+                <div class="source-result">
+                    <a href="${item.url}" target="_blank" class="source-link">
+                        ${new URL(item.url).hostname.replace('www.', '')}
+                    </a>
+                    <div class="source-summary">${processContent(item.summary)}</div>
+                </div>
+            `).join('')}
+        </div>` : ''}
+    `;
+}
+    
+        // Event listeners
+        document.getElementById("query").addEventListener("keypress", e => {
+            if (e.key === "Enter") performSearch();
+        });
+    </script>
+</body>
+</html>

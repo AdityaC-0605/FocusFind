@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>PDF Q&A Assistant</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f0f4ff;
+      padding: 20px;
+      text-align: center;
+    }
+    h1 {
+      color: #4f46e5;
+    }
+    .container {
+      max-width: 600px;
+      margin: auto;
+    }
+    input, button {
+      padding: 12px;
+      margin: 10px;
+      font-size: 16px;
+      border-radius: 8px;
+    }
+    input[type="file"] {
+      border: 1px solid #ccc;
+    }
+    #query {
+      width: 80%;
+    }
+    button {
+      background: #4f46e5;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    #responseBox {
+      background: white;
+      padding: 20px;
+      margin-top: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      white-space: pre-wrap;
+      text-align: left;
+    }
+  </style>
+</head>
+<body>
+  <h1>📄 Offline PDF Knowledge Extraction and Question Answering System</h1>
+  <div class="container">
+    <input type="file" id="pdfFile" accept=".pdf">
+    <button onclick="uploadPDF()">Upload PDF</button>
+
+    <br><br>
+
+    <input type="text" id="query" placeholder="Ask a question..." />
+    <button onclick="askQuestion()">Ask</button>
+
+    <div id="responseBox"></div>
+  </div>
+
+  <script>
+    async function uploadPDF() {
+      const file = document.getElementById("pdfFile").files[0];
+      if (!file) return alert("Please choose a PDF file to upload.");
+
+      const formData = new FormData();
+      formData.append("pdf", file);
+
+      try {
+        const res = await fetch("/upload", {
+          method: "POST",
+          body: formData
+        });
+        const data = await res.json();
+        alert(data.message);
+      } catch (err) {
+        alert("Upload failed.");
+      }
+    }
+
+    async function askQuestion() {
+      const query = document.getElementById("query").value.trim();
+      if (!query) return;
+
+      document.getElementById("responseBox").textContent = "⏳ Thinking...";
+
+      try {
+        const res = await fetch("/ask", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message: query })
+        });
+        const data = await res.json();
+        document.getElementById("responseBox").textContent = data.response;
+      } catch (err) {
+        document.getElementById("responseBox").textContent = "❌ Failed to get response.";
+      }
+    }
+  </script>
+</body>
+</html>
